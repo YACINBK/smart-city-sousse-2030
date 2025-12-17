@@ -12,6 +12,16 @@ API_URL = "http://127.0.0.1:8000/api/"
 st.set_page_config(page_title="Smart City Sousse", layout="wide")
 
 # --- CSS Styling ---
+# Anchors for valid land placement (Vehicles)
+DISTRICT_ANCHORS = [
+    (35.8245, 10.6345), # Medina
+    (35.8360, 10.5900), # Sahloul
+    (35.8450, 10.6200), # Khezama
+    (35.8180, 10.5500), # Kalaa Sghira
+    (35.8550, 10.6050), # Hammam Sousse
+    (35.8050, 10.6100), # Cité Riadh
+]
+
 st.markdown("""
 <style>
     .metric-card {
@@ -101,7 +111,7 @@ st.divider()
 # --- 1. Map Visualization (Sousse) ---
 st.subheader("📍 Carte en Temps Réel (Sousse)")
 
-m = folium.Map(location=[35.8256, 10.6084], zoom_start=13, tiles="CartoDB dark_matter")
+m = folium.Map(location=[35.8300, 10.6100], zoom_start=14, tiles="CartoDB dark_matter")
 
 # Add Sensors
 if not df_sensors.empty:
@@ -115,33 +125,35 @@ if not df_sensors.empty:
         elif row['type_capteur'] == 'trafic':
             icon = "road"
         elif row['type_capteur'] == 'énergie':
-            icon = "flash"
+            icon = "bolt"
         elif row['type_capteur'] == 'déchets':
             icon = "trash"
         elif row['type_capteur'] == 'éclairage':
-            icon = "lightbulb-o"
+            icon = "lightbulb"
         else:
-            icon = "info-sign"
+            icon = "info-circle"
         
         folium.Marker(
             location=[row['latitude'], row['longitude']],
             tooltip=f"<b>Type:</b> {row['type_capteur']}<br><b>Statut:</b> {row['statut']}<br><b>ID:</b> {row['id_capteur']}",
-            icon=folium.Icon(color=color, icon=icon)
+            icon=folium.Icon(color=color, icon=icon, prefix='fa')
         ).add_to(m)
 
 # Add Simulated Vehicles (Random movement simulation for 'Real-time' feel)
 if not df_vehicles.empty:
     for _, row in df_vehicles.iterrows():
-        # Simulate slight movement around Sousse center
-        lat = 35.8256 + random.uniform(-0.03, 0.03)
-        lon = 10.6084 + random.uniform(-0.03, 0.03)
+        # Pick a random district anchor + small offset to ensure LAND placement
+        anchor = random.choice(DISTRICT_ANCHORS)
+        lat = anchor[0] + random.uniform(-0.005, 0.005)
+        lon = anchor[1] + random.uniform(-0.005, 0.005)
+        
         folium.Marker(
             location=[lat, lon],
             tooltip=f"Véhicule {row['plaque_immatriculation']}",
             icon=folium.Icon(color="blue", icon="car", prefix="fa")
         ).add_to(m)
 
-st_folium(m, width=1400, height=500, returned_objects=[])
+st_folium(m, width=1200, height=350, returned_objects=[])
 
 # --- 2. Business Questions & Analytics ---
 st.divider()
@@ -203,7 +215,8 @@ with tab2:
                 size='cout', 
                 color='type_intervention', 
                 hover_data=['date_heure'],
-                title="Impact CO2 vs Durée & Coût"
+                title="Impact CO2 vs Durée (min) & Coût",
+                labels={'duree': 'Durée (minutes)', 'impact_co2': 'Impact CO2 (kg)', 'cout': 'Coût (TND)'}
             )
             st.plotly_chart(fig_co2_int, use_container_width=True)
 

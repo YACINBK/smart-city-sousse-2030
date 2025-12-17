@@ -91,12 +91,15 @@ class Citoyen(models.Model):
 
 class Consultation(models.Model):
     id_consultation = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    theme = models.CharField(max_length=200)
-    date_consultation = models.DateField()
+    titre = models.CharField(max_length=200)
+    description = models.TextField(default="")
+    date_debut = models.DateField()
+    date_fin = models.DateField()
+    statut = models.CharField(max_length=20)
     participants = models.ManyToManyField(Citoyen, through='Participation')
 
     def __str__(self):
-        return self.theme
+        return self.titre
 
 class Participation(models.Model):
     citoyen = models.ForeignKey(Citoyen, on_delete=models.CASCADE)

@@ -96,19 +96,34 @@ class Command(BaseCommand):
         self.stdout.write("- Generating Sensors...")
         sensors = []
         sensor_types = ['qualité_air', 'trafic', 'énergie', 'déchets', 'éclairage']
-        
-        # Approximate Sousse bounding box (More inland/urban to avoid sea)
-        # Lat: 35.80 to 35.85 (North-South)
-        # Lon: 10.58 to 10.63 (West-East, avoiding >10.64 which is sea)
-        lat_min, lat_max = 35.8100, 35.8500
-        lon_min, lon_max = 10.5900, 10.6350
+        # Sousse "District Anchors" to ensure land placement and distribution
+        # (Lat, Lon) centers for main neighborhoods
+        DISTRICT_ANCHORS = [
+            (35.8245, 10.6345), # Medina / Centre Ville (Inland from port)
+            (35.8360, 10.5900), # Sahloul (Safe inland)
+            (35.8450, 10.6200), # Khezama (Residential)
+            (35.8180, 10.5500), # Kalaa Sghira (Further west)
+            (35.8550, 10.6050), # Hammam Sousse / Akouda border
+            (35.8050, 10.6100), # Cité Riadh / Sud
+        ]
 
-        for _ in range(50):
+        for _ in range(120):
+            # Pick a random district
+            anchor_lat, anchor_lon = random.choice(DISTRICT_ANCHORS)
+            
+            # Add small random offset (approx +/- 500m)
+            # 0.005 degrees is roughly 500m
+            lat = anchor_lat + random.uniform(-0.004, 0.004)
+            lon = anchor_lon + random.uniform(-0.004, 0.004)
+
+            # Weighted status: 80% Actif
+            statut = random.choices(['actif', 'en_maintenance', 'hors_service'], weights=[80, 15, 5])[0]
+
             s = Capteur.objects.create(
                 type_capteur=random.choice(sensor_types),
-                latitude=random.uniform(lat_min, lat_max),
-                longitude=random.uniform(lon_min, lon_max),
-                statut=random.choice(['actif', 'en_maintenance', 'hors_service']),
+                latitude=lat,
+                longitude=lon,
+                statut=statut,
                 date_installation=fake.date_between(start_date='-2y', end_date='today'),
                 proprietaire=random.choice(proprietaires)
             )
@@ -132,23 +147,77 @@ class Command(BaseCommand):
                 impact_co2=round(random.uniform(0.5, 50.0), 2)
             )
             
+            # 2 Technicians minimum (Worker + Validator)
             InterventionTechnicien.objects.create(intervention=intervention, technicien=t_worker, role='intervenant')
             InterventionTechnicien.objects.create(intervention=intervention, technicien=t_validator, role='validateur')
 
-        # 5. Citizens
-        self.stdout.write("- Generating Citizens...")
+        # 5. Consultations (Public Projects)
+        self.stdout.write("- Generating Consultations...")
+        PROJECT_TOPICS = [
+            'Aménagement piste cyclable Sahloul',
+            'Nouveaux capteurs air Medina',
+            'Zone piétonne Khezama',
+            'Éclairage intelligent Corniche',
+            'Navette autonome Centre-Ville'
+        ]
+        
+        consultations = []
+        for topic in PROJECT_TOPICS:
+            c = Consultation.objects.create(
+                titre=topic,
+                description=f"Consultation publique pour le projet {topic}.",
+                date_debut=fake.date_between(start_date='-6m', end_date='-1m'),
+                date_fin=fake.date_between(start_date='today', end_date='+2m'),
+                statut=random.choice(['ouverte', 'fermee', 'planifiee'])
+            )
+            consultations.append(c)
+
+        # 6. Citizens & Participations (SCORING LOGIC HERE)
+        self.stdout.write("- Generating Citizens & Participations with SCORING...")
+        
+        MOBILITY_SCORES = {
+            'Marche': 15,
+            'Vélo': 10,
+            'Transports en commun': 5,
+            'Véhicule électrique': 5,
+            'Voiture Thermique': 0 # Fallback
+        }
+        PARTICIPATION_BONUS = 20
+
         for _ in range(100):
             name = get_tunisian_name()
-            Citoyen.objects.create(
+            mobility_pref = random.choice(['Vélo', 'Marche', 'Transports en commun', 'Véhicule électrique'])
+            
+            # 1. Determine base score from mobility
+            base_score = MOBILITY_SCORES.get(mobility_pref, 0)
+            
+            # 2. Determine participation (Random 0 to 3 consultations)
+            num_participations = random.choices([0, 1, 2, 3], weights=[50, 30, 15, 5])[0]
+            
+            # 3. Calculate Total Score
+            total_score = base_score + (num_participations * PARTICIPATION_BONUS)
+
+            citoyen = Citoyen.objects.create(
                 nom=name,
                 adresse=get_sousse_address(),
                 email=generate_email(name),
                 telephone=get_tunisian_phone(),
-                score_ecologique=random.randint(0, 100),
-                preferences_mobilite=random.choice(['Vélo', 'Marche', 'Transports en commun', 'Véhicule électrique'])
+                score_ecologique=total_score,
+                preferences_mobilite=mobility_pref
             )
+            
+            # Create the participations
+            if num_participations > 0:
+                # Pick random unique consultations
+                target_consultations = random.sample(consultations, k=min(num_participations, len(consultations)))
+                for consult in target_consultations:
+                    Participation.objects.create(
+                        citoyen=citoyen,
+                        consultation=consult
+                        # No avis/vote anymore
+                    )
 
-        # 6. Vehicles
+        # 7. Vehicles
         self.stdout.write("- Generating Vehicles...")
         vehicles = []
         used_plates = set()
