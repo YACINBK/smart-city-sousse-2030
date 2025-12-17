@@ -111,7 +111,7 @@ st.divider()
 # --- 1. Map Visualization (Sousse) ---
 st.subheader("📍 Carte en Temps Réel (Sousse)")
 
-m = folium.Map(location=[35.8256, 10.6084], zoom_start=13, tiles="CartoDB dark_matter")
+m = folium.Map(location=[35.8300, 10.6100], zoom_start=14, tiles="CartoDB dark_matter")
 
 # Add Sensors
 if not df_sensors.empty:
@@ -153,7 +153,7 @@ if not df_vehicles.empty:
             icon=folium.Icon(color="blue", icon="car", prefix="fa")
         ).add_to(m)
 
-st_folium(m, width=1400, height=500, returned_objects=[])
+st_folium(m, width=1200, height=350, returned_objects=[])
 
 # --- 2. Business Questions & Analytics ---
 st.divider()
