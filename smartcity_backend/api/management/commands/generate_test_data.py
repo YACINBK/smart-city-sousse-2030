@@ -39,7 +39,7 @@ class Command(BaseCommand):
             'Trabelsi', 'Gharbi', 'Ben Ali', 'Hammamy', 'Jaziri', 'Mabrouk', 'Zarrouk', 'Driss', 'Ben Amor', 'Sassi',
             'Bouazizi', 'Khemiri', 'Mejri', 'Chahed', 'Ghanem', 'Rezgui'
         ]
-        SOUSSE_DISTRICTS = [
+        SOUSSE_DISTRICTS_NAMES = [
             'Sahloul', 'Khezama Est', 'Khezama Ouest', 'Hammam Sousse', 'Akouda', 'Kalaa Kebira', 'Kalaa Seghira',
             'La Medina', 'Bouhsina', 'Trocadero', 'Corniche', 'El Kantaoui', 'Sidi Boujaafar'
         ]
@@ -57,7 +57,7 @@ class Command(BaseCommand):
         def get_sousse_address():
             street_type = random.choice(['Rue', 'Avenue', 'Boulevard', 'Impasse'])
             street_name = random.choice(['de la République', 'du 14 Janvier', 'Ibn Khaldoun', 'Hanniabal', 'Okba Ibn Nafaa', 'de l\'Indépendance', 'Taha Hussein', 'Imam Sahnoun'])
-            district = random.choice(SOUSSE_DISTRICTS)
+            district = random.choice(SOUSSE_DISTRICTS_NAMES)
             zip_code = random.choice(['4000', '4051', '4011', '4002', '4089'])
             return f"{random.randint(1, 150)} {street_type} {street_name}, {district}, {zip_code} Sousse"
 
@@ -96,20 +96,26 @@ class Command(BaseCommand):
         self.stdout.write("- Generating Sensors...")
         sensors = []
         sensor_types = ['qualité_air', 'trafic', 'énergie', 'déchets', 'éclairage']
+        
         # Sousse "District Anchors" to ensure land placement and distribution
-        # (Lat, Lon) centers for main neighborhoods
-        DISTRICT_ANCHORS = [
-            (35.8245, 10.6345), # Medina / Centre Ville (Inland from port)
-            (35.8360, 10.5900), # Sahloul (Safe inland)
-            (35.8450, 10.6200), # Khezama (Residential)
-            (35.8180, 10.5500), # Kalaa Sghira (Further west)
-            (35.8550, 10.6050), # Hammam Sousse / Akouda border
-            (35.8050, 10.6100), # Cité Riadh / Sud
+        # List of Dicts: Name + Coords
+        DISTRICTS_DATA = [
+            {'name': 'Medina', 'lat': 35.8245, 'lon': 10.6345},
+            {'name': 'Sahloul', 'lat': 35.8360, 'lon': 10.5900},
+            {'name': 'Khezama', 'lat': 35.8450, 'lon': 10.6200},
+            {'name': 'Kalaa Sghira', 'lat': 35.8180, 'lon': 10.5500},
+            {'name': 'Hammam Sousse', 'lat': 35.8550, 'lon': 10.6050},
+            {'name': 'Cité Riadh', 'lat': 35.8050, 'lon': 10.6100},
         ]
+        # Just extracting coordinates for vehicle use later
+        DISTRICT_ANCHORS = [(d['lat'], d['lon']) for d in DISTRICTS_DATA] 
 
         for _ in range(120):
-            # Pick a random district
-            anchor_lat, anchor_lon = random.choice(DISTRICT_ANCHORS)
+            # Pick a random district OBJECT
+            district_obj = random.choice(DISTRICTS_DATA)
+            anchor_lat = district_obj['lat']
+            anchor_lon = district_obj['lon']
+            quartier_name = district_obj['name']
             
             # Add small random offset (approx +/- 500m)
             # 0.005 degrees is roughly 500m
@@ -124,6 +130,7 @@ class Command(BaseCommand):
                 latitude=lat,
                 longitude=lon,
                 statut=statut,
+                quartier=quartier_name, # Storing the region name!
                 date_installation=fake.date_between(start_date='-2y', end_date='today'),
                 proprietaire=random.choice(proprietaires)
             )

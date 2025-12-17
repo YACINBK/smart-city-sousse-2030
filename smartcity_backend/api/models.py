@@ -34,6 +34,7 @@ class Capteur(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES)
+    quartier = models.CharField(max_length=100, default="Sousse") # New field
     date_installation = models.DateField()
     proprietaire = models.ForeignKey(Proprietaire, on_delete=models.CASCADE, related_name='capteurs')
 
