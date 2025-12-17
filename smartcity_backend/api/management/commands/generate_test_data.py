@@ -110,7 +110,7 @@ class Command(BaseCommand):
         # Just extracting coordinates for vehicle use later
         DISTRICT_ANCHORS = [(d['lat'], d['lon']) for d in DISTRICTS_DATA] 
 
-        for _ in range(120):
+        for _ in range(180):
             # Pick a random district OBJECT
             district_obj = random.choice(DISTRICTS_DATA)
             anchor_lat = district_obj['lat']
@@ -122,8 +122,8 @@ class Command(BaseCommand):
             lat = anchor_lat + random.uniform(-0.004, 0.004)
             lon = anchor_lon + random.uniform(-0.004, 0.004)
 
-            # Weighted status: 80% Actif
-            statut = random.choices(['actif', 'en_maintenance', 'hors_service'], weights=[80, 15, 5])[0]
+            # Weighted status: More realistic initial failure rate
+            statut = random.choices(['actif', 'en_maintenance', 'hors_service'], weights=[70, 20, 10])[0]
 
             s = Capteur.objects.create(
                 type_capteur=random.choice(sensor_types),

@@ -319,7 +319,13 @@ def display_analytics():
 # --- Main Layout ---
 st.title("🏙️ Smart City Sousse")
 
-if st.button("🔄 Actualiser"):
+if st.button("🔄 Actualiser (Smart Sim)"):
+    # Trigger Backend Simulation Step
+    try:
+        requests.post(f"{API_URL}simulate/")
+        st.toast("Simulation Step Triggered! 🚦")
+    except:
+        st.error("Failed to trigger simulation.")
     st.rerun()
 
 # 1. Stats at Top

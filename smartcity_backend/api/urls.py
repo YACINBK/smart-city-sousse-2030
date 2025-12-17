@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ProprietaireViewSet, CapteurViewSet, TechnicienViewSet, 
     InterventionViewSet, CitoyenViewSet, ConsultationViewSet, 
-    VehiculeAutonomeViewSet, TrajetViewSet
+    VehiculeAutonomeViewSet, TrajetViewSet, simulate_step
 )
 
 router = DefaultRouter()
@@ -18,4 +18,5 @@ router.register(r'trajets', TrajetViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('simulate/', simulate_step, name='simulate-step'),
 ]
