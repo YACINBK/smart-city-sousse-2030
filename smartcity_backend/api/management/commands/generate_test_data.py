@@ -96,19 +96,34 @@ class Command(BaseCommand):
         self.stdout.write("- Generating Sensors...")
         sensors = []
         sensor_types = ['qualité_air', 'trafic', 'énergie', 'déchets', 'éclairage']
-        
-        # Approximate Sousse bounding box (More inland/urban to avoid sea)
-        # Lat: 35.80 to 35.85 (North-South)
-        # Lon: 10.58 to 10.63 (West-East, avoiding >10.64 which is sea)
-        lat_min, lat_max = 35.8100, 35.8500
-        lon_min, lon_max = 10.5900, 10.6350
+        # Sousse "District Anchors" to ensure land placement and distribution
+        # (Lat, Lon) centers for main neighborhoods
+        DISTRICT_ANCHORS = [
+            (35.8245, 10.6345), # Medina / Centre Ville (Inland from port)
+            (35.8360, 10.5900), # Sahloul (Safe inland)
+            (35.8450, 10.6200), # Khezama (Residential)
+            (35.8180, 10.5500), # Kalaa Sghira (Further west)
+            (35.8550, 10.6050), # Hammam Sousse / Akouda border
+            (35.8050, 10.6100), # Cité Riadh / Sud
+        ]
 
-        for _ in range(50):
+        for _ in range(120):
+            # Pick a random district
+            anchor_lat, anchor_lon = random.choice(DISTRICT_ANCHORS)
+            
+            # Add small random offset (approx +/- 500m)
+            # 0.005 degrees is roughly 500m
+            lat = anchor_lat + random.uniform(-0.004, 0.004)
+            lon = anchor_lon + random.uniform(-0.004, 0.004)
+
+            # Weighted status: 80% Actif
+            statut = random.choices(['actif', 'en_maintenance', 'hors_service'], weights=[80, 15, 5])[0]
+
             s = Capteur.objects.create(
                 type_capteur=random.choice(sensor_types),
-                latitude=random.uniform(lat_min, lat_max),
-                longitude=random.uniform(lon_min, lon_max),
-                statut=random.choice(['actif', 'en_maintenance', 'hors_service']),
+                latitude=lat,
+                longitude=lon,
+                statut=statut,
                 date_installation=fake.date_between(start_date='-2y', end_date='today'),
                 proprietaire=random.choice(proprietaires)
             )
