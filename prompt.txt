@@ -1,0 +1,261 @@
+Contexte et Enjeux
+Face à la croissance démographique et aux défis environnementaux, la métropole "NeoSousse 2030" s'est engagée dans une transformation digitale visant à optimiser la gestion
+des ressources urbaines grâce aux technologies émergentes. Ce projet s'inscrit dans le
+cadre du déploiement d'une plateforme de collecte, d'analyse et de visualisation des
+données urbaines en temps réel. Les objectifs sont multiples : améliorer la qualité de vie
+des citoyens, réduire l'empreinte écologique, et optimiser les coûts opérationnels des
+services municipaux.
+Voici la théorie (conception de projet) :
+# PROJET DE MODULE – SMART CITY ANALYTICS PLATFORM
+
+## Plateforme Intelligente de Gestion des Données Urbaines
+
+---
+
+## A. Partie Théorique
+
+---
+
+## 1. Modélisation Conceptuelle (Diagramme Entité–Association)
+
+### Entités principales
+
+**CAPTEUR**
+
+* id_capteur (UUID)
+* type_capteur (air, trafic, énergie, déchets, éclairage)
+* latitude
+* longitude
+* statut (actif, maintenance, hors service)
+* date_installation
+
+**PROPRIETAIRE**
+
+* id_proprietaire
+* nom
+* type_proprietaire (municipalité / privé)
+* adresse
+* telephone
+* email
+
+**TECHNICIEN**
+
+* id_technicien
+* nom
+* certification
+
+**INTERVENTION**
+
+* id_intervention
+* date_heure
+* type_intervention (prédictive, corrective, curative)
+* duree
+* cout
+* impact_co2
+
+**CITOYEN**
+
+* id_citoyen
+* nom
+* adresse
+* telephone
+* email
+* score_ecologique
+* preferences_mobilite
+
+**CONSULTATION**
+
+* id_consultation
+* theme
+* date_consultation
+
+**VEHICULE_AUTONOME**
+
+* id_vehicule
+* plaque_immatriculation
+* type_vehicule
+* energie_utilisee
+
+**TRAJET**
+
+* id_trajet
+* origine
+* destination
+* duree
+* economie_co2
+
+---
+
+### Associations
+
+* **POSSEDE** : PROPRIETAIRE (1,N) — CAPTEUR (1,1)
+* **SUBIT** : CAPTEUR (1,N) — INTERVENTION (1,1)
+* **REALISE** : TECHNICIEN (N,N) — INTERVENTION (2,2)
+* **PARTICIPE** : CITOYEN (N,N) — CONSULTATION (N,N)
+* **EFFECTUE** : VEHICULE_AUTONOME (1,N) — TRAJET (1,1)
+
+---
+
+## 2. Cardinalités et Contraintes
+
+* Un **capteur** appartient à un seul propriétaire, mais un propriétaire peut posséder plusieurs capteurs.
+* Une **intervention** concerne un seul capteur, mais un capteur peut subir plusieurs interventions.
+* Une **intervention** doit être réalisée par **au moins deux techniciens** (contrainte métier forte).
+* Un **citoyen** peut participer à plusieurs consultations, et inversement.
+* Un **véhicule autonome** peut effectuer plusieurs trajets, chaque trajet est lié à un seul véhicule.
+
+---
+
+## 3. Modèle Relationnel Normalisé
+
+**PROPRIETAIRE**(
+
+* id_proprietaire PK,
+* nom,
+* type_proprietaire,
+* adresse,
+* telephone,
+* email
+  )
+
+**CAPTEUR**(
+
+* id_capteur PK,
+* type_capteur,
+* latitude,
+* longitude,
+* statut,
+* date_installation,
+* id_proprietaire FK
+  )
+
+**TECHNICIEN**(
+
+* id_technicien PK,
+* nom,
+* certification
+  )
+
+**INTERVENTION**(
+
+* id_intervention PK,
+* date_heure,
+* type_intervention,
+* duree,
+* cout,
+* impact_co2,
+* id_capteur FK
+  )
+
+**INTERVENTION_TECHNICIEN**(
+
+* id_intervention PK, FK,
+* id_technicien PK, FK,
+* role (intervenant / validateur)
+  )
+
+**CITOYEN**(
+
+* id_citoyen PK,
+* nom,
+* adresse,
+* telephone,
+* email,
+* score_ecologique,
+* preferences_mobilite
+  )
+
+**CONSULTATION**(
+
+* id_consultation PK,
+* theme,
+* date_consultation
+  )
+
+**PARTICIPATION**(
+
+* id_citoyen PK, FK,
+* id_consultation PK, FK
+  )
+
+**VEHICULE_AUTONOME**(
+
+* id_vehicule PK,
+* plaque_immatriculation,
+* type_vehicule,
+* energie_utilisee
+  )
+
+**TRAJET**(
+
+* id_trajet PK,
+* origine,
+* destination,
+* duree,
+* economie_co2,
+* id_vehicule FK
+  )
+
+---
+
+## 4. Analyse des Redondances
+
+* Les informations du **propriétaire** ne sont pas répétées dans CAPTEUR → élimination de redondance.
+* Les techniciens liés aux interventions sont externalisés via une table associative.
+* Les consultations et participations sont séparées pour éviter la duplication des citoyens.
+
+---
+
+## 5. Dépendances Fonctionnelles (exemples)
+
+**CAPTEUR**
+
+* id_capteur → type_capteur, latitude, longitude, statut, date_installation, id_proprietaire
+
+**INTERVENTION**
+
+* id_intervention → date_heure, type_intervention, duree, cout, impact_co2, id_capteur
+
+**TRAJET**
+
+* id_trajet → origine, destination, duree, economie_co2, id_vehicule
+
+---
+
+## 6. Clés et Identifiants
+
+* Clés primaires : UUID ou identifiants techniques (id_*)
+* Clés étrangères assurant l’intégrité référentielle entre entités liées
+
+---
+
+## 7. Formes Normales
+
+Toutes les relations sont en :
+
+* **1FN** : attributs atomiques
+* **2FN** : aucune dépendance partielle (clés simples ou tables associatives)
+* **3FN** : aucune dépendance transitive
+
+---
+
+## 8. Décomposition Optimisée (BCNF)
+
+Le schéma proposé respecte la **BCNF** car :
+
+* Chaque dépendance fonctionnelle a une clé candidate comme déterminant.
+* Les relations N–N sont correctement décomposées en tables associatives.
+
+Créer un projet qui répond a ces questions:
+Questions Métiers Types
+La plateforme doit notamment permettre de répondre aux interrogations suivantes :
+• Quelles sont les zones les plus polluées de la ville sur les dernières 24 heures ?
+• Quel est le taux de disponibilité des capteurs par arrondissement ?
+• Quels sont les citoyens les plus engagés dans la réduction de leur empreinte
+carbone ?
+• Combien d’interventions prédictives ont été réalisées ce mois-ci,
+quelle économie ont-elles générée ?
+• Quels trajets de véhicules autonomes ont permis la plus grande réduction de CO₂
+? :
+Utiliser les technologies suivantes : postgresql pour la base de données, django pour backend, streamlit pour frontend, créer un map de la ville Sousse, Tunisie, ou les capteurs et les véhicules sont placés ( meme les autres points de data)
+en utilisant folium streamlit, n'oublie pas que le projet doit supporter data en temps réel et series temporelles.
