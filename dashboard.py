@@ -170,14 +170,19 @@ with tab1:
         if not df_sensors.empty:
             air_sensors = df_sensors[df_sensors['type_capteur'] == 'qualité_air'].copy()
             if not air_sensors.empty:
+                # Group by Quartier to show regional quality
                 air_sensors['AQI'] = [random.randint(20, 150) for _ in range(len(air_sensors))]
-                air_sensors['Location'] = air_sensors.apply(lambda x: f"({x['latitude']:.3f}, {x['longitude']:.3f})", axis=1)
+                
+                # Aggregate by Quartier
+                district_aqi = air_sensors.groupby('quartier')['AQI'].mean().reset_index()
+                district_aqi['AQI'] = district_aqi['AQI'].round(0)
+                
                 fig_aqi = px.bar(
-                    air_sensors.sort_values('AQI', ascending=False).head(10),
-                    x='Location', y='AQI',
+                    district_aqi.sort_values('AQI', ascending=False),
+                    x='quartier', y='AQI',
                     color='AQI',
-                    title="Top 10 Zones Polluées (Coordonnées GPS & AQI)",
-                    labels={'Location': 'Localisation (Lat, Lon)', 'AQI': 'Indice Qualité Air'},
+                    title="Qualité de l'Air Moyenne par Quartier (AQI)",
+                    labels={'quartier': 'Quartier', 'AQI': 'Indice Qualité Air Moyen'},
                     color_continuous_scale='RdYlGn_r'
                 )
                 st.plotly_chart(fig_aqi, use_container_width=True)
