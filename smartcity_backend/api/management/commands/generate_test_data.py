@@ -147,23 +147,77 @@ class Command(BaseCommand):
                 impact_co2=round(random.uniform(0.5, 50.0), 2)
             )
             
+            # 2 Technicians minimum (Worker + Validator)
             InterventionTechnicien.objects.create(intervention=intervention, technicien=t_worker, role='intervenant')
             InterventionTechnicien.objects.create(intervention=intervention, technicien=t_validator, role='validateur')
 
-        # 5. Citizens
-        self.stdout.write("- Generating Citizens...")
+        # 5. Consultations (Public Projects)
+        self.stdout.write("- Generating Consultations...")
+        PROJECT_TOPICS = [
+            'Aménagement piste cyclable Sahloul',
+            'Nouveaux capteurs air Medina',
+            'Zone piétonne Khezama',
+            'Éclairage intelligent Corniche',
+            'Navette autonome Centre-Ville'
+        ]
+        
+        consultations = []
+        for topic in PROJECT_TOPICS:
+            c = Consultation.objects.create(
+                titre=topic,
+                description=f"Consultation publique pour le projet {topic}.",
+                date_debut=fake.date_between(start_date='-6m', end_date='-1m'),
+                date_fin=fake.date_between(start_date='today', end_date='+2m'),
+                statut=random.choice(['ouverte', 'fermee', 'planifiee'])
+            )
+            consultations.append(c)
+
+        # 6. Citizens & Participations (SCORING LOGIC HERE)
+        self.stdout.write("- Generating Citizens & Participations with SCORING...")
+        
+        MOBILITY_SCORES = {
+            'Marche': 15,
+            'Vélo': 10,
+            'Transports en commun': 5,
+            'Véhicule électrique': 5,
+            'Voiture Thermique': 0 # Fallback
+        }
+        PARTICIPATION_BONUS = 20
+
         for _ in range(100):
             name = get_tunisian_name()
-            Citoyen.objects.create(
+            mobility_pref = random.choice(['Vélo', 'Marche', 'Transports en commun', 'Véhicule électrique'])
+            
+            # 1. Determine base score from mobility
+            base_score = MOBILITY_SCORES.get(mobility_pref, 0)
+            
+            # 2. Determine participation (Random 0 to 3 consultations)
+            num_participations = random.choices([0, 1, 2, 3], weights=[50, 30, 15, 5])[0]
+            
+            # 3. Calculate Total Score
+            total_score = base_score + (num_participations * PARTICIPATION_BONUS)
+
+            citoyen = Citoyen.objects.create(
                 nom=name,
                 adresse=get_sousse_address(),
                 email=generate_email(name),
                 telephone=get_tunisian_phone(),
-                score_ecologique=random.randint(0, 100),
-                preferences_mobilite=random.choice(['Vélo', 'Marche', 'Transports en commun', 'Véhicule électrique'])
+                score_ecologique=total_score,
+                preferences_mobilite=mobility_pref
             )
+            
+            # Create the participations
+            if num_participations > 0:
+                # Pick random unique consultations
+                target_consultations = random.sample(consultations, k=min(num_participations, len(consultations)))
+                for consult in target_consultations:
+                    Participation.objects.create(
+                        citoyen=citoyen,
+                        consultation=consult
+                        # No avis/vote anymore
+                    )
 
-        # 6. Vehicles
+        # 7. Vehicles
         self.stdout.write("- Generating Vehicles...")
         vehicles = []
         used_plates = set()

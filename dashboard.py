@@ -215,7 +215,8 @@ with tab2:
                 size='cout', 
                 color='type_intervention', 
                 hover_data=['date_heure'],
-                title="Impact CO2 vs Durée & Coût"
+                title="Impact CO2 vs Durée (min) & Coût",
+                labels={'duree': 'Durée (minutes)', 'impact_co2': 'Impact CO2 (kg)', 'cout': 'Coût (TND)'}
             )
             st.plotly_chart(fig_co2_int, use_container_width=True)
 
