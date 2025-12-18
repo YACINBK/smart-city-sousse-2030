@@ -26,17 +26,33 @@ DISTRICT_ANCHORS = [
 
 # ... (styles)
 
+# Anchors for valid land placement (Vehicles)
+DISTRICT_ANCHORS = [
+    (36.130, 10.380), # Ennfidha
+    (36.030, 10.500), # Hergla
+    (35.950, 10.470), # Sidi Bou Ali
+    (35.920, 10.300), # Kondar
+    (35.870, 10.560), # Akouda
+    (35.8750, 10.5400), # Kalaa Kebira
+    (35.8550, 10.6050), # Hammam Sousse
+    (35.825, 10.635), # Sousse Ville
+    (35.810, 10.620), # Sousse Jawhara
+    (35.800, 10.600), # Sousse Riadh
+    (35.800, 10.640), # Sidi Abdelhamid
+    (35.8180, 10.5500), # Kalaa Sghira
+    (35.780, 10.630), # Zaouia Ksiba Thrayet
+    (35.730, 10.580), # Msaken
+    (35.670, 10.320), # Sidi El Heni
+]
+
 # --- Data Fetching ---
 def fetch_data(endpoint):
     try:
         response = requests.get(f"{API_URL}{endpoint}/")
         if response.status_code == 200:
             return pd.DataFrame(response.json())
-        else:
-            st.error(f"Failed to fetch {endpoint}: {response.status_code}")
-            return pd.DataFrame()
+        return pd.DataFrame()
     except Exception as e:
-        st.error(f"Error connecting to API: {e}")
         return pd.DataFrame()
 
 # --- Fragment: Key Metrics ---
