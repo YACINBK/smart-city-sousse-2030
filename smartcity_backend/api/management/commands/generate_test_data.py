@@ -15,7 +15,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         self.stdout.write("Cleaning old data...")
-        # Delete in order of dependencies (child first)
         Trajet.objects.all().delete()
         InterventionTechnicien.objects.all().delete()
         Intervention.objects.all().delete()
@@ -92,13 +91,11 @@ class Command(BaseCommand):
             )
             technicians.append(t)
 
-        # 3. Sensors (Capteurs)
+        # 3.Capteurs
         self.stdout.write("- Generating Sensors...")
         sensors = []
         sensor_types = ['qualité_air', 'trafic', 'énergie', 'déchets', 'éclairage']
         
-        # Sousse "District Anchors" to ensure land placement and distribution
-        # List of Dicts: Name + Coords
         DISTRICTS_DATA = [
             {'name': 'Medina', 'lat': 35.8245, 'lon': 10.6345},
             {'name': 'Sahloul', 'lat': 35.8360, 'lon': 10.5900},
@@ -107,7 +104,6 @@ class Command(BaseCommand):
             {'name': 'Hammam Sousse', 'lat': 35.8550, 'lon': 10.6050},
             {'name': 'Cité Riadh', 'lat': 35.8050, 'lon': 10.6100},
         ]
-        # Just extracting coordinates for vehicle use later
         DISTRICT_ANCHORS = [(d['lat'], d['lon']) for d in DISTRICTS_DATA] 
 
         for _ in range(180):
@@ -117,12 +113,9 @@ class Command(BaseCommand):
             anchor_lon = district_obj['lon']
             quartier_name = district_obj['name']
             
-            # Add small random offset (approx +/- 500m)
-            # 0.005 degrees is roughly 500m
             lat = anchor_lat + random.uniform(-0.004, 0.004)
             lon = anchor_lon + random.uniform(-0.004, 0.004)
 
-            # Weighted status: More realistic initial failure rate
             statut = random.choices(['actif', 'en_maintenance', 'hors_service'], weights=[70, 20, 10])[0]
 
             s = Capteur.objects.create(
@@ -154,7 +147,7 @@ class Command(BaseCommand):
                 impact_co2=round(random.uniform(0.5, 50.0), 2)
             )
             
-            # 2 Technicians minimum (Worker + Validator)
+            
             InterventionTechnicien.objects.create(intervention=intervention, technicien=t_worker, role='intervenant')
             InterventionTechnicien.objects.create(intervention=intervention, technicien=t_validator, role='validateur')
 
@@ -179,7 +172,7 @@ class Command(BaseCommand):
             )
             consultations.append(c)
 
-        # 6. Citizens & Participations (SCORING LOGIC HERE)
+        # 6. Citizens & Participations
         self.stdout.write("- Generating Citizens & Participations with SCORING...")
         
         MOBILITY_SCORES = {
@@ -187,7 +180,7 @@ class Command(BaseCommand):
             'Vélo': 10,
             'Transports en commun': 5,
             'Véhicule électrique': 5,
-            'Voiture Thermique': 0 # Fallback
+            'Voiture Thermique': 0 
         }
         PARTICIPATION_BONUS = 20
 
@@ -195,13 +188,10 @@ class Command(BaseCommand):
             name = get_tunisian_name()
             mobility_pref = random.choice(['Vélo', 'Marche', 'Transports en commun', 'Véhicule électrique'])
             
-            # 1. Determine base score from mobility
             base_score = MOBILITY_SCORES.get(mobility_pref, 0)
             
-            # 2. Determine participation (Random 0 to 3 consultations)
             num_participations = random.choices([0, 1, 2, 3], weights=[50, 30, 15, 5])[0]
-            
-            # 3. Calculate Total Score
+
             total_score = base_score + (num_participations * PARTICIPATION_BONUS)
 
             citoyen = Citoyen.objects.create(
@@ -213,15 +203,13 @@ class Command(BaseCommand):
                 preferences_mobilite=mobility_pref
             )
             
-            # Create the participations
             if num_participations > 0:
-                # Pick random unique consultations
                 target_consultations = random.sample(consultations, k=min(num_participations, len(consultations)))
                 for consult in target_consultations:
                     Participation.objects.create(
                         citoyen=citoyen,
                         consultation=consult
-                        # No avis/vote anymore
+                     
                     )
 
         # 7. Vehicles
@@ -230,8 +218,8 @@ class Command(BaseCommand):
         used_plates = set()
         
         while len(vehicles) < 20:
-            # x TU y format
-            x = random.randint(240, 259) # [240..259]
+        
+            x = random.randint(240, 259) 
             y = random.randint(1, 9999)
             plate = f"{x} TU {y}"
             
@@ -244,7 +232,7 @@ class Command(BaseCommand):
                 )
                 vehicles.append(v)
 
-        # 7. Trips (Trajets)
+        # 7. Trajets
         self.stdout.write("- Generating Trips...")
         for _ in range(50):
             if not vehicles: break
@@ -256,4 +244,4 @@ class Command(BaseCommand):
                 economie_co2=round(random.uniform(1.0, 15.0), 2)
             )
 
-        self.stdout.write(self.style.SUCCESS('Successfully generated Tunisian synthetic data!'))
+        self.stdout.write(self.style.SUCCESS('generated synthetic data'))
