@@ -1,0 +1,138 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+\geometry{hmargin=2.5cm,vmargin=2.5cm}
+
+\title{\textbf{RAPPORT DE PROJET \\ SMART CITY ANALYTICS PLATFORM \\ (Neo-Sousse 2030)}}
+\author{Étudiant : Yacin Test}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Contexte et Objectifs}
+
+\subsection{Introduction}
+Dans le cadre de la modernisation des infrastructures urbaines de la métropole "Neo-Sousse 2030", ce projet vise à concevoir et déployer une plateforme digitale de gestion des données urbaines. L'objectif est de centraliser, analyser et visualiser les flux de données provenant de capteurs IoT, de véhicules autonomes et des interactions citoyennes.
+
+\subsection{Enjeux}
+\begin{itemize}
+    \item \textbf{Optimisation des coûts} : Réduire les dépenses de maintenance via des interventions ciblées.
+    \item \textbf{Écologie} : Suivre et réduire l'empreinte carbone (trafic, qualité de l'air).
+    \item \textbf{Qualité de vie} : Améliorer les services aux citoyens (mobilité, participation publique).
+\end{itemize}
+
+\section{Modélisation Théorique}
+
+\subsection{Modèle Conceptuel de Données (MCD)}
+Le système s'articule autour de plusieurs entités clés identifiées lors de l'analyse métier :
+
+\begin{itemize}
+    \item \textbf{CAPTEUR} : Point central de la collecte (Air, Trafic, Énergie...). Il est géolocalisé et possède un statut.
+    \item \textbf{INTERVENTION} : Action de maintenance reliée à un capteur, impliquant des techniciens.
+    \item \textbf{CITOYEN} : Acteur participant à la vie de la cité (Consultations) et dont l'empreinte écologique est calculée.
+    \item \textbf{VEHICULE\_AUTONOME \& TRAJET} : Gestion de la flotte intelligente et calcul des économies de CO2 par trajet.
+\end{itemize}
+
+\subsection{Schéma Relationnel \& Normalisation}
+La base de données a été conçue pour respecter les formes normales jusqu'à la \textbf{BCNF (Boyce-Codd Normal Form)} afin d'éviter redondances et anomalies de mise à jour.
+
+\subsubsection{Corrections du Modèle Conceptuel (E/A)}
+\begin{itemize}
+    \item \textbf{Relation Trajet -- Véhicule} : Le diagramme initial présentait une relation N:M. Elle a été corrigée en \textbf{1:N} : un trajet appartient à un seul véhicule, tandis qu'un véhicule effectue plusieurs trajets (\textbf{Trajet(1,1) --- Véhicule(1,n)}).
+    \item \textbf{Gestion des Techniciens} : Utilisation d'une table associative pour gérer la relation N:N entre \texttt{Intervention} et \texttt{Technicien} avec un attribut de lien \texttt{role} (Intervenant vs Validateur).
+\end{itemize}
+
+\subsubsection{Dépendances Fonctionnelles (DF)}
+\begin{itemize}
+    \item \texttt{id\_capteur $\rightarrow$ type, latitude, longitude, statut, date\_installation, id\_proprietaire}
+    \item \texttt{id\_trajet $\rightarrow$ origine, destination, duree, economie\_co2, id\_vehicule}
+\end{itemize}
+
+\subsubsection{Justification BCNF}
+Le schéma est en \textbf{BCNF} car pour chaque dépendance fonctionnelle non triviale $X \rightarrow Y$, le déterminant $X$ est une clé candidate.
+\begin{enumerate}
+    \item \textbf{1FN} : Tous les attributs sont atomiques.
+    \item \textbf{2FN} : Pas de dépendances partielles.
+    \item \textbf{3FN} : Pas de dépendances transitives (ex: l'adresse du propriétaire n'est stockée que dans \texttt{Proprietaire}).
+    \item \textbf{BCNF} : Pas de déterminant qui ne soit pas une clé candidate.
+\end{enumerate}
+
+\section{Architecture Technique}
+
+\subsection{Stack Technologique}
+Le projet repose sur une architecture moderne séparant le Backend (Gestion de données) du Frontend (Visualisation), garantissant scalabilité et maintenance aisée.
+
+\begin{itemize}
+    \item \textbf{Backend} : \textbf{Django (Python)} + \textbf{Django REST Framework}.
+    \begin{itemize}
+        \item Rôle : ORM (Object-Relational Mapping), Gestion de la BDD, API RESTful.
+        \item Base de Données : \textbf{PostgreSQL} (Robuste pour les données relationnelles).
+    \end{itemize}
+    \item \textbf{Frontend} : \textbf{Streamlit}.
+    \begin{itemize}
+        \item Rôle : Dashboard interactif pour la Data Science et la visualisation temps réel.
+    \end{itemize}
+    \item \textbf{Visualisation} : \textbf{Folium} (Cartographie) + \textbf{Plotly} (Graphiques interactifs).
+\end{itemize}
+
+\subsection{Pipeline ETL (Extract, Transform, Load) Embedded}
+Contrairement à une approche Batch traditionnelle, ce projet implémente un \textbf{ETL Temps Réel} intégré au Dashboard :
+
+\begin{enumerate}
+    \item \textbf{Extract (Extraction)} : Le Dashboard interroge l'API Django (\texttt{GET /api/capteurs/}, \texttt{/api/trajets/}) à chaque actualisation.
+    \item \textbf{Transform (Transformation)} :
+    \begin{itemize}
+        \item Nettoyage des données (Gestion des valeurs nulles).
+        \item Enrichissement (Calcul des taux de panne par quartier, Simulation AQI).
+        \item Agrégation (Somme des économies CO2, Coûts totaux).
+    \end{itemize}
+    \item \textbf{Load (Chargement)} : Injection des données traitées dans les composants visuels (Cartes Folium, Graphiques Plotly).
+\end{enumerate}
+
+\section{Implémentation Fonctionnelle}
+
+\subsection{Simulation "Smart City" Intelligente}
+Pour démontrer capacités temps réel, un moteur de simulation (\texttt{simulate\_step}) a été intégré au Backend :
+\begin{itemize}
+    \item \textbf{Volatilité} : À chaque "Pas de temps", 20\% des capteurs changent d'état (Actif $\leftrightarrow$ Hors Service).
+    \item \textbf{Logique Métier} : Le centre-ville (Sousse Ville) est soumis à un stress plus élevé (pannes plus fréquentes).
+    \item \textbf{Auto-Guérison} : Le système déclenche automatiquement des interventions correctives sur les capteurs défaillants.
+    \item \textbf{Mobilité} : Les positions des véhicules autonomes sont recalculées dynamiquement.
+\end{itemize}
+
+\subsection{Réponses aux Questions Métiers (KPIs)}
+Le Dashboard répond directement aux problématiques posées dans le cahier des charges :
+
+\begin{enumerate}
+    \item \textbf{"Quelles sont les zones les plus polluées ?"} \\
+    \textit{Réponse} : Onglet "Pollution". Histogramme des indices AQI (Air Quality Index) par quartier, calculé sur les dernières 24h.
+    
+    \item \textbf{"Quel est le taux de disponibilité des capteurs ?"} \\
+    \textit{Réponse} : Onglet "Disponibilité" \& Sidebar. Graphique global + Tableau d'alerte classant les zones par taux de panne décroissant (ex: "Sousse Ville: 45\% de pannes").
+    
+    \item \textbf{"Quels sont les citoyens les plus engagés ?"} \\
+    \textit{Réponse} : Onglet "Citoyens". Classement (Top 10) basé sur le \texttt{score\_ecologique} calculé selon leurs modes de transport et participation.
+    
+    \item \textbf{"Combien d'interventions prédictives ?"} \\
+    \textit{Réponse} : Onglet "Interventions". Indicateur métrique dédié et courbe des coûts.
+    
+    \item \textbf{"Quels trajets ont réduit le plus de CO2 ?"} \\
+    \textit{Réponse} : Onglet "Trajets". Carte interactive traçant les lignes de parcours (Vert=Départ, Rouge=Arrivée) et Top 5 des économies réalisées.
+\end{enumerate}
+
+\section{Conclusion}
+Le projet "Smart City Analytics Platform" fournit une solution complète, allant de la modélisation rigoureuse des données (BCNF) à une interface utilisateur réactive. L'architecture découplée (API + Dashboard) permet une évolution future facile (ex: ajout d'une app mobile citoyenne se connectant à la même API). \\
+La simulation intégrée démontre la robustesse du système face à des flux de données dynamiques et imprévisibles, validant ainsi sa pertinence pour le pilotage urbain de Neo-Sousse 2030.
+
+\end{document}

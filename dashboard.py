@@ -128,11 +128,21 @@ def display_map_only():
             ).add_to(m)
 
     if not df_vehicles.empty:
+        # Get simulation step for movement
+        step = st.session_state.get('sim_step', 0)
+        
         for _, row in df_vehicles.iterrows():
-            anchor = random.choice(DISTRICT_ANCHORS)
-            h_val = hash(row['plaque_immatriculation'])
-            lat_off = (h_val % 100 - 50) / 10000.0
-            lon_off = ((h_val >> 2) % 100 - 50) / 10000.0
+            # Smart Movement: Change anchor/offset based on simulation step
+            # Use hash of plate + step to deterministically move them per click
+            move_seed = hash(row['plaque_immatriculation'] + str(step))
+            
+            # Pick a new district anchor based on the seed
+            anchor_idx = move_seed % len(DISTRICT_ANCHORS)
+            anchor = DISTRICT_ANCHORS[anchor_idx]
+            
+            # Calculate small offset (jitter)
+            lat_off = (move_seed % 100 - 50) / 8000.0
+            lon_off = ((move_seed >> 2) % 100 - 50) / 8000.0
             
             folium.Marker(
                 location=[anchor[0] + lat_off, anchor[1] + lon_off],
@@ -174,7 +184,7 @@ def display_sidebar_table():
 @st.fragment
 def display_analytics():
     st.divider()
-    st.subheader("📊 Analyses Approfondies")
+    st.subheader("Analyses Approfondies")
     
     df_sensors = fetch_data("capteurs")
     df_interventions = fetch_data("interventions")
@@ -193,6 +203,7 @@ def display_analytics():
     ])
 
     with tab1: # Pollution
+        st.caption("ℹ️ Ces statistiques représentent les dernières 24 heures.")
         if not df_sensors.empty:
             air_sensors = df_sensors[df_sensors['type_capteur'] == 'qualité_air'].copy()
             if not air_sensors.empty:
@@ -207,7 +218,7 @@ def display_analytics():
                 st.plotly_chart(fig_aqi, use_container_width=True)
 
     with tab2: # Availability
-        st.markdown("### 📡 Disponibilité des Capteurs (Global & Par Zone)")
+        st.markdown("### Disponibilité des Capteurs (Global & Par Zone)")
         if not df_sensors.empty:
             col_graph1, col_graph2 = st.columns([1, 2])
             
@@ -245,7 +256,7 @@ def display_analytics():
                 st.plotly_chart(fig_avail, use_container_width=True)
 
     with tab3: # Citizens
-        st.markdown("### 🏆 Top Citoyens")
+        st.markdown("### Top Citoyens")
         if not df_citizens.empty:
             unique_citizens = df_citizens.sort_values('score_ecologique', ascending=False).drop_duplicates(subset=['nom'])
             top_citizens = unique_citizens.head(10)
@@ -259,7 +270,7 @@ def display_analytics():
             st.dataframe(top_citizens[['nom', 'email', 'preferences_mobilite', 'score_ecologique']], use_container_width=True, hide_index=True)
 
     with tab4: # Interventions
-        st.markdown("### 🔮 Interventions")
+        st.markdown("### Interventions")
         if not df_interventions.empty:
             predictive = df_interventions[df_interventions['type_intervention'] == 'prédictive']
             col_m1, col_m2 = st.columns(2)
@@ -273,7 +284,7 @@ def display_analytics():
                 st.plotly_chart(fig_pred, use_container_width=True)
 
     with tab5: # Trips
-        st.markdown("### 🚍 Trajets Écologiques")
+        st.markdown("### Trajets Écologiques")
         if not df_trips.empty:
             top_trips = df_trips.sort_values('economie_co2', ascending=False).head(5)
             st.dataframe(top_trips[['origine', 'destination', 'duree', 'economie_co2']], use_container_width=True)
@@ -317,13 +328,17 @@ def display_analytics():
             st_folium(m_trips, height=400, use_container_width=True)
 
 # --- Main Layout ---
-st.title("🏙️ Smart City Sousse")
+if 'sim_step' not in st.session_state:
+    st.session_state.sim_step = 0
+
+st.title("Smart City Sousse")
 
 if st.button("🔄 Actualiser (Smart Sim)"):
     # Trigger Backend Simulation Step
     try:
         requests.post(f"{API_URL}simulate/")
         st.toast("Simulation Step Triggered! 🚦")
+        st.session_state.sim_step += 1 # Advance vehicle step
     except:
         st.error("Failed to trigger simulation.")
     st.rerun()
