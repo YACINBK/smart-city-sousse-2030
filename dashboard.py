@@ -55,6 +55,7 @@ def fetch_data(endpoint):
             return pd.DataFrame(response.json())
         return pd.DataFrame()
     except Exception as e:
+        st.error(f"Error connecting to API: {e}")
         return pd.DataFrame()
 
 # --- Fragment: Top Metrics ---
