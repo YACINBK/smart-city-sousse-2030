@@ -33,6 +33,15 @@ class CitoyenSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ConsultationSerializer(serializers.ModelSerializer):
+    def validate(self, attrs):
+        date_debut = attrs.get("date_debut", getattr(self.instance, "date_debut", None))
+        date_fin = attrs.get("date_fin", getattr(self.instance, "date_fin", None))
+        if date_debut and date_fin and date_fin < date_debut:
+            raise serializers.ValidationError(
+                {"date_fin": "La date de fin doit etre posterieure a la date de debut."}
+            )
+        return attrs
+
     class Meta:
         model = Consultation
         fields = '__all__'

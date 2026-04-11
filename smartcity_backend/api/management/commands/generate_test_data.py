@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from smartcity_backend.api.models import (
     Proprietaire, Capteur, Technicien, Intervention,
     Citoyen, VehiculeAutonome, Trajet, InterventionTechnicien,
@@ -6,9 +7,7 @@ from smartcity_backend.api.models import (
 )
 from faker import Faker
 import random
-import uuid
-from django.utils import timezone
-import unidecode
+import unicodedata
 
 class Command(BaseCommand):
     help = 'Generates Tunisian-specific synthetic data for the Smart City platform'
@@ -61,7 +60,8 @@ class Command(BaseCommand):
             return f"{random.randint(1, 150)} {street_type} {street_name}, {district}, {zip_code} Sousse"
 
         def generate_email(name):
-            normalized = unidecode.unidecode(name.lower().replace(' ', '.'))
+            normalized = unicodedata.normalize("NFKD", name.lower().replace(' ', '.'))
+            normalized = normalized.encode("ascii", "ignore").decode("ascii")
             domain = random.choice(['gmail.com', 'yahoo.fr', 'topnet.tn', 'gnet.tn'])
             # Add random digits to ensure uniqueness
             return f"{normalized}.{random.randint(1, 9999)}@{domain}"

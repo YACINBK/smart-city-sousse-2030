@@ -1,6 +1,5 @@
 import requests
 import pandas as pd
-import streamlit as st
 
 API_URL = "http://127.0.0.1:8000/api/"
 
@@ -18,13 +17,18 @@ def fetch_data(endpoint):
         print(f"Exception: {e}")
         return pd.DataFrame()
 
-print("Testing connection...")
-df_sensors = fetch_data("capteurs")
-print("Sensors columns:", df_sensors.columns)
+def main():
+    print("Testing connection...")
+    df_sensors = fetch_data("capteurs")
+    print("Sensors columns:", df_sensors.columns)
 
-if not df_sensors.empty:
-    df_sensors['latitude'] = pd.to_numeric(df_sensors['latitude'], errors='coerce')
-    df_sensors['longitude'] = pd.to_numeric(df_sensors['longitude'], errors='coerce')
-    print("Coordinates processed.")
+    if not df_sensors.empty:
+        df_sensors['latitude'] = pd.to_numeric(df_sensors['latitude'], errors='coerce')
+        df_sensors['longitude'] = pd.to_numeric(df_sensors['longitude'], errors='coerce')
+        print("Coordinates processed.")
 
-print("Done.")
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()

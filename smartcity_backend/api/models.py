@@ -1,5 +1,8 @@
-from django.db import models
 import uuid
+
+from django.core.exceptions import ValidationError
+from django.db import models
+
 
 class Proprietaire(models.Model):
     TYPE_CHOICES = [
@@ -12,6 +15,9 @@ class Proprietaire(models.Model):
     adresse = models.TextField()
     telephone = models.CharField(max_length=20)
     email = models.EmailField()
+
+    class Meta:
+        ordering = ["nom"]
 
     def __str__(self):
         return self.nom
@@ -38,6 +44,13 @@ class Capteur(models.Model):
     date_installation = models.DateField()
     proprietaire = models.ForeignKey(Proprietaire, on_delete=models.CASCADE, related_name='capteurs')
 
+    class Meta:
+        ordering = ["quartier", "type_capteur", "id_capteur"]
+        indexes = [
+            models.Index(fields=["quartier"]),
+            models.Index(fields=["statut"]),
+        ]
+
     def __str__(self):
         return f"{self.type_capteur} ({self.statut})"
 
@@ -45,6 +58,9 @@ class Technicien(models.Model):
     id_technicien = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom = models.CharField(max_length=100)
     certification = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["nom"]
 
     def __str__(self):
         return self.nom
@@ -66,6 +82,13 @@ class Intervention(models.Model):
     # ManyToMany with Technicians through a custom table to handle roles
     techniciens = models.ManyToManyField(Technicien, through='InterventionTechnicien')
 
+    class Meta:
+        ordering = ["-date_heure"]
+        indexes = [
+            models.Index(fields=["type_intervention"]),
+            models.Index(fields=["date_heure"]),
+        ]
+
     def __str__(self):
         return f"{self.type_intervention} on {self.date_heure}"
 
@@ -78,6 +101,15 @@ class InterventionTechnicien(models.Model):
     technicien = models.ForeignKey(Technicien, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
+    class Meta:
+        ordering = ["intervention", "role", "technicien"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["intervention", "technicien"],
+                name="unique_technicien_per_intervention",
+            ),
+        ]
+
 class Citoyen(models.Model):
     id_citoyen = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     nom = models.CharField(max_length=100)
@@ -86,6 +118,12 @@ class Citoyen(models.Model):
     email = models.EmailField(unique=True)
     score_ecologique = models.IntegerField(default=0)
     preferences_mobilite = models.TextField(help_text="Préférences de mobilité (JSON ou texte)")
+
+    class Meta:
+        ordering = ["nom"]
+        indexes = [
+            models.Index(fields=["score_ecologique"]),
+        ]
 
     def __str__(self):
         return self.nom
@@ -99,6 +137,16 @@ class Consultation(models.Model):
     statut = models.CharField(max_length=20)
     participants = models.ManyToManyField(Citoyen, through='Participation')
 
+    class Meta:
+        ordering = ["-date_debut", "titre"]
+        indexes = [
+            models.Index(fields=["statut"]),
+        ]
+
+    def clean(self):
+        if self.date_fin < self.date_debut:
+            raise ValidationError("La date de fin doit etre posterieure a la date de debut.")
+
     def __str__(self):
         return self.titre
 
@@ -107,11 +155,23 @@ class Participation(models.Model):
     consultation = models.ForeignKey(Consultation, on_delete=models.CASCADE)
     date_participation = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["-date_participation"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["citoyen", "consultation"],
+                name="unique_participation_per_consultation",
+            ),
+        ]
+
 class VehiculeAutonome(models.Model):
     id_vehicule = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     plaque_immatriculation = models.CharField(max_length=20, unique=True)
     type_vehicule = models.CharField(max_length=50)
     energie_utilisee = models.CharField(max_length=50)
+
+    class Meta:
+        ordering = ["plaque_immatriculation"]
 
     def __str__(self):
         return self.plaque_immatriculation
@@ -123,6 +183,9 @@ class Trajet(models.Model):
     destination = models.CharField(max_length=100)
     duree = models.IntegerField(help_text="Durée en minutes")
     economie_co2 = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        ordering = ["vehicule", "origine", "destination"]
 
     def __str__(self):
         return f"{self.origine} -> {self.destination}"

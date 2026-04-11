@@ -31,26 +31,33 @@ if [ "$CLEANUP_ONLY" = true ]; then
     exit 0
 fi
 
-# Activate environment or install
+# Resolve virtual environment binaries explicitly instead of relying on PATH.
 if [ ! -d "venv" ]; then
     echo -e "${BLUE}Creating virtual environment...${NC}"
     python3 -m venv venv
-    source venv/bin/activate
+fi
+
+PYTHON_BIN="$(pwd)/venv/bin/python"
+PIP_BIN="$(pwd)/venv/bin/pip"
+
+if [ ! -x "$PYTHON_BIN" ]; then
+    echo -e "${RED}Virtual environment Python not found at $PYTHON_BIN${NC}"
+    exit 1
+fi
+
+if [ ! -x "$PIP_BIN" ]; then
     echo -e "${BLUE}Installing dependencies...${NC}"
-    pip install -r requirements.txt
-else
-    source venv/bin/activate
+    "$PIP_BIN" install -r requirements.txt
 fi
 
 # Run migrations to be sure
 echo -e "${BLUE}Checking database...${NC}"
-python manage.py makemigrations
-python manage.py migrate
+"$PYTHON_BIN" manage.py migrate
 
 # Start Backend
 echo -e "${GREEN}Starting Django Backend (Port 8000)...${NC}"
 # Use nohup to separate output/process slightly, but we want to kill them later
-python manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
+"$PYTHON_BIN" manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to be ready
@@ -67,24 +74,24 @@ echo ""
 
 # Start Simulation
 echo -e "${GREEN}Starting Simulation...${NC}"
-python simulate_realtime.py > simulation.log 2>&1 &
+"$PYTHON_BIN" simulate_realtime.py > simulation.log 2>&1 &
 SIM_PID=$!
 
 # Start Dashboard
 echo -e "${GREEN}Starting Dashboard (Port 8501)...${NC}"
-streamlit run dashboard.py --server.headless true > dashboard.log 2>&1 &
+"$PYTHON_BIN" -m streamlit run dashboard.py --server.headless true > dashboard.log 2>&1 &
 DASH_PID=$!
 
 echo -e "${BLUE}----------------------------------------${NC}"
-echo -e "${GREEN}✅ SYSTEM LAUNCHED SUCCESSFULLY${NC}"
+echo -e "${GREEN}SYSTEM LAUNCHED SUCCESSFULLY${NC}"
 echo -e "${BLUE}----------------------------------------${NC}"
 echo -e "Backend PID: $BACKEND_PID"
 echo -e "Simulation PID: $SIM_PID"
 echo -e "Dashboard PID: $DASH_PID"
 echo -e ""
-echo -e "📊 ACCESS DASHBOARD HERE: ${GREEN}http://localhost:8501${NC}"
+echo -e "Dashboard: ${GREEN}http://localhost:8501${NC}"
 echo -e ""
-echo -e "${RED}⚠️  DO NOT CLOSE THIS TERMINAL!${NC}"
+echo -e "${RED}Do not close this terminal if you want the services to keep running.${NC}"
 echo -e "Press Ctrl+C to stop all services."
 echo -e "${BLUE}----------------------------------------${NC}"
 
