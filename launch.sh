@@ -19,7 +19,7 @@ cleanup() {
     echo -e "${RED}Stopping all services...${NC}"
     # Find and kill our specific processes
     pkill -f "manage.py runserver"
-    pkill -f "simulate_realtime.py"
+    pkill -f "scripts/simulate_realtime.py"
     pkill -f "streamlit run dashboard.py"
     echo -e "${BLUE}Cleanup complete.${NC}"
 }
@@ -39,11 +39,14 @@ fi
 
 PYTHON_BIN="$(pwd)/venv/bin/python"
 PIP_BIN="$(pwd)/venv/bin/pip"
+LOG_DIR="$(pwd)/logs"
 
 if [ ! -x "$PYTHON_BIN" ]; then
     echo -e "${RED}Virtual environment Python not found at $PYTHON_BIN${NC}"
     exit 1
 fi
+
+mkdir -p "$LOG_DIR"
 
 if [ ! -x "$PIP_BIN" ]; then
     echo -e "${BLUE}Installing dependencies...${NC}"
@@ -57,7 +60,7 @@ echo -e "${BLUE}Checking database...${NC}"
 # Start Backend
 echo -e "${GREEN}Starting Django Backend (Port 8000)...${NC}"
 # Use nohup to separate output/process slightly, but we want to kill them later
-"$PYTHON_BIN" manage.py runserver 0.0.0.0:8000 > backend.log 2>&1 &
+"$PYTHON_BIN" manage.py runserver 0.0.0.0:8000 > "$LOG_DIR/backend.log" 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to be ready
@@ -74,12 +77,12 @@ echo ""
 
 # Start Simulation
 echo -e "${GREEN}Starting Simulation...${NC}"
-"$PYTHON_BIN" simulate_realtime.py > simulation.log 2>&1 &
+"$PYTHON_BIN" scripts/simulate_realtime.py > "$LOG_DIR/simulation.log" 2>&1 &
 SIM_PID=$!
 
 # Start Dashboard
 echo -e "${GREEN}Starting Dashboard (Port 8501)...${NC}"
-"$PYTHON_BIN" -m streamlit run dashboard.py --server.headless true > dashboard.log 2>&1 &
+"$PYTHON_BIN" -m streamlit run dashboard.py --server.headless true > "$LOG_DIR/dashboard.log" 2>&1 &
 DASH_PID=$!
 
 echo -e "${BLUE}----------------------------------------${NC}"
@@ -96,7 +99,7 @@ echo -e "Press Ctrl+C to stop all services."
 echo -e "${BLUE}----------------------------------------${NC}"
 
 # Logs tailing (optional, helps user see if something crashes)
-# tail -f dashboard.log &
+# tail -f "$LOG_DIR/dashboard.log" &
 
 # Trap for cleanup
 trap "kill $BACKEND_PID $SIM_PID $DASH_PID; exit" SIGINT SIGTERM

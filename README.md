@@ -19,9 +19,9 @@ Smart City Sousse 2030 is an academic databases project built around a smart-cit
 
 ## Screenshots
 
-![Dashboard overview](assets/dashboard_overview.png)
+![Dashboard overview](docs/screenshots/dashboard_overview.png)
 
-![Analytics view](assets/analytics_view.png)
+![Analytics view](docs/screenshots/analytics_view.png)
 
 ## Quick Start
 
@@ -30,7 +30,7 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
-python generate_data.py
+python scripts/generate_data.py
 ./launch.sh
 ```
 
@@ -57,7 +57,7 @@ Dashboard:
 Simulation:
 
 ```bash
-./venv/bin/python simulate_realtime.py
+./venv/bin/python scripts/simulate_realtime.py
 ```
 
 ## Project Structure
@@ -65,9 +65,16 @@ Simulation:
 ```text
 smart-city-sousse-2030/
 ├── dashboard.py
-├── generate_data.py
+├── docs/
+│   ├── references/
+│   ├── reports/
+│   └── screenshots/
 ├── launch.sh
-├── simulate_realtime.py
+├── logs/
+├── scripts/
+│   ├── generate_data.py
+│   ├── simulate_realtime.py
+│   └── test_debug.py
 └── smartcity_backend/
     ├── settings.py
     ├── urls.py
@@ -93,7 +100,7 @@ Core entities:
 - `VehiculeAutonome`
 - `Trajet`
 
-The backend includes indexes, integrity constraints, and validation rules to make the database model more consistent and usable for coursework.
+The backend includes indexes, integrity constraints, and validation rules to make the database model more consistent and usable for coursework. Academic reports, references, and screenshots are grouped under `docs/`.
 
 ## Testing
 
