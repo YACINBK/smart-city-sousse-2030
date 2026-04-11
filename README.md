@@ -40,25 +40,6 @@ Open:
 - API: `http://127.0.0.1:8000/api/`
 - Admin: `http://127.0.0.1:8000/admin/`
 
-## Manual Run
-
-Backend:
-
-```bash
-./venv/bin/python manage.py runserver
-```
-
-Dashboard:
-
-```bash
-./venv/bin/python -m streamlit run dashboard.py
-```
-
-Simulation:
-
-```bash
-./venv/bin/python scripts/simulate_realtime.py
-```
 
 ## Project Structure
 
@@ -102,12 +83,6 @@ Core entities:
 
 The backend includes indexes, integrity constraints, and validation rules to make the database model more consistent and usable for coursework. Academic reports, references, and screenshots are grouped under `docs/`.
 
-## Testing
-
-```bash
-./venv/bin/python manage.py check
-./venv/bin/python manage.py test
-```
 
 ## Authors
 
